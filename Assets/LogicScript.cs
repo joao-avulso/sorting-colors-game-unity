@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -7,22 +8,21 @@ public class LogicScript : MonoBehaviour
     public GameObject container;
     public Ball selected;
     public int colorAmount = 4;
+    public Color[] colors;
+    public float animSpeed = 0.1f;
 
     private int[] colorCount;
     private List<GameObject> containers = new();
+    private bool active = false;
+
 
     public GameObject gameOverScreen;
 
     void Start()
     {
         colorCount = new int[colorAmount];
-        for (int i = 0; i < colorAmount; i++)
-        {
-            colorCount[i] = 0;
-            Debug.Log("ColorCount: " + colorCount[i]);
-        }
-
         GenerateContainers();
+        Invoke(nameof(GenerateColors), (colorAmount + 2) * animSpeed);
         selected.IsActive = false;
     }
 
@@ -38,7 +38,6 @@ public class LogicScript : MonoBehaviour
     void GenerateContainers() 
     {
         int numContainers = colorAmount + 2;
-        int maxAmount = colorAmount * 4;
 
         Vector3 screenWidthPos = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width, Screen.height/2, 0));
         Vector3 screenWidthNeg = Camera.main.ScreenToWorldPoint(new Vector3(-Screen.width, Screen.height/2, 0));
@@ -46,32 +45,41 @@ public class LogicScript : MonoBehaviour
         for (int i = 0; i < numContainers; i++)
         {
             GameObject newContainer = Instantiate(container, transform.position, transform.rotation);
-            newContainer.transform.localScale /= 1.2f;
-            Vector3 desPos = Vector3.Lerp(screenWidthPos, screenWidthNeg, (i + 0.5f) / numContainers / 2.0f);
-            newContainer.transform.position = new Vector3(desPos.x, desPos.y, 0);
-
-            ContainerScript cScript = newContainer.GetComponent<ContainerScript>();
-            if (maxAmount >= colorAmount)
-            {
-                int curAmount = Random.Range(0, colorAmount+1);
-                if (maxAmount <= (i*colorAmount))
-                    curAmount = colorAmount;
-                cScript.amount = curAmount;
-                cScript.InitContainer(colorCount);
-                maxAmount -= curAmount;            
-            }
+            if (numContainers > 6)
+                newContainer.transform.localScale /= 2.0f;
             else
-            {
-                cScript.amount = maxAmount;
-                cScript.InitContainer(colorCount);
-                maxAmount = 0;
-            }
-
+                newContainer.transform.localScale /= 1.2f;
+            Vector3 desPos = Vector3.Lerp(screenWidthPos, screenWidthNeg, (i + 0.5f) / numContainers / 2.0f);
+            newContainer.transform.position = new Vector3(desPos.x, -8);
+            newContainer.transform.LeanMoveLocalY(desPos.y, animSpeed).setDelay(i * animSpeed).setEaseOutCirc();
             containers.Add(newContainer);
         }
     }
 
-    public void CheckEndGame() {
+    void GenerateColors()
+    {
+        int maxAmount = colorAmount * 4;
+        int count = 0;
+
+        while(maxAmount > 0)
+        {   
+            // pick color
+            int colorIndex = Random.Range(0, colorAmount);
+            while (colorCount[colorIndex] == 4) { colorIndex = Random.Range(0, colorAmount); }
+            colorCount[colorIndex]++;
+            // pick container
+            int containerIndex = Random.Range(0, containers.Count);
+            while (containers[containerIndex].GetComponent<ContainerScript>().amount == 4) { containerIndex = Random.Range(0, containers.Count); }
+            // generate
+            containers[containerIndex].GetComponent<ContainerScript>().AddColor(colors[colorIndex], colorIndex, count);
+            maxAmount--;
+            count++;
+        }
+        Invoke(nameof(SetActive), count * animSpeed/2);
+    }
+
+    public void CheckEndGame() 
+    {
         foreach (var item in containers)
         {
             if (!item.GetComponent<ContainerScript>().VerifyContainer(colorCount))
@@ -86,5 +94,20 @@ public class LogicScript : MonoBehaviour
     public void RestartGame()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
+
+    void SetActive()
+    {
+        active = true;
+    }
+
+    public bool GetActive()
+    {
+        return active;
     }
 }

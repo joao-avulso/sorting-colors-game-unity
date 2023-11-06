@@ -177,10 +177,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   circle: {fileID: 7402846426875995552, guid: e5c36f99fb7c6c24381e9ac5ac5b85a5, type: 3}
   origin: {fileID: 231872097858608267}
-  circleColors:
-  - {r: 0.38039216, g: 0.5176471, b: 0.84705883, a: 1}
-  - {r: 0.3137255, g: 0.77254903, b: 0.7176471, a: 1}
-  - {r: 0.6117647, g: 0.9254902, b: 0.35686275, a: 1}
-  - {r: 0.9411765, g: 0.95686275, b: 0.39607844, a: 1}
-  amount: 4
+  amount: 0
   isComplete: 0

@@ -15,7 +15,6 @@ public class ContainerScript : MonoBehaviour
     public GameObject circle;
     public GameObject origin;
     public Stack<Ball> balls = new();
-    public List<Color> circleColors;
     public int amount = 0;
     public bool isComplete = false;
 
@@ -35,36 +34,34 @@ public class ContainerScript : MonoBehaviour
             PushBall();
     }
 
-    public void InitContainer(int[] colorCount) 
+    public void AddColor(Color color, int index, int count) 
     {
-        if (amount > max) { amount = max; }
-        if (amount < 1) { amount = 0; }
+        // instantiate
+        GameObject newCircle = Instantiate(circle, transform);
+        newCircle.GetComponent<SpriteRenderer>().color = color;
 
-        for (int i = 0; i < amount; i++)
+        // transform
+        Vector3 origPos = newCircle.transform.position;
+        newCircle.transform.position += 7 * Vector3.up;
+        if (amount != 0)
+            newCircle.transform.LeanMove(origPos + amount * newCircle.transform.lossyScale.y * Vector3.up, 0.5f).setDelay(count * gameLogic.animSpeed/2).setEaseOutCirc();
+        else
+            newCircle.transform.LeanMove(origPos, 0.5f).setDelay(count * gameLogic.animSpeed/2).setEaseOutCirc();
+        
+        // add ball
+        Ball newBall = new()
         {
-            GameObject newCircle = Instantiate(circle, transform);
-            newCircle.transform.position += i * newCircle.transform.lossyScale.y * Vector3.up;
-
-            int index = Random.Range(0,circleColors.Count);
-            while (colorCount[index] == max) { index = Random.Range(0,circleColors.Count); }
-            newCircle.GetComponent<SpriteRenderer>().color = circleColors[index];
-
-            colorCount[index]++;
-
-            Ball newBall = new()
-            {
-                IsActive = true,
-                Obj = newCircle,
-                ColorIndex = index,
-            };
-
-            balls.Push(newBall);
-        }
+            IsActive = true,
+            Obj = newCircle,
+            ColorIndex = index,
+        };
+        balls.Push(newBall);
+        amount++;
     }
 
     void PopBall() 
     {
-        if (balls.Count == 0)
+        if (balls.Count == 0 || !gameLogic.GetActive())
             return;
 
         gameLogic.selected = balls.Pop();
@@ -76,6 +73,7 @@ public class ContainerScript : MonoBehaviour
 
     void PushBall() 
     {
+        Debug.Log(origin.transform.position.y);
         Ball newBall = gameLogic.selected;
         gameLogic.selected.Obj.GetComponent<SpriteRenderer>().sortingOrder = 0;
         gameLogic.selected = new() { IsActive = false };
