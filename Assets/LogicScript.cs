@@ -1,25 +1,34 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class LogicScript : MonoBehaviour
 {
+    public GameObject gameOverScreen;
+    public GameObject nextLevelScreen;
     public GameObject container;
-    public Ball selected;
-    public int colorAmount = 4;
-    public Color[] colors;
-    public float animSpeed = 0.1f;
-
-    private int[] colorCount;
     private List<GameObject> containers = new();
+
+    public Ball selected;
+    public Color[] colors;
+
+    public int health = 100;
+    public int colorAmount = 4;
+    private int[] colorCount;
+
+    public float animSpeed = 0.1f;
+    public float moveChance = 0.9f;
+
     private bool active = false;
 
-
-    public GameObject gameOverScreen;
+    public Text levelText;
+    public Text healthText;
 
     void Start()
     {
+        levelText.text += " " + (SceneManager.GetActiveScene().buildIndex + 1);
+        healthText.text += health;
         colorCount = new int[colorAmount];
         GenerateContainers();
         Invoke(nameof(GenerateColors), (colorAmount + 2) * animSpeed);
@@ -32,6 +41,12 @@ public class LogicScript : MonoBehaviour
         {
             Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             selected.Obj.transform.position = (Vector3)mousePos;
+        }
+
+        if (health < 1)
+        {
+            SetActiveFalse();
+            gameOverScreen.SetActive(true);
         }
     }
 
@@ -75,7 +90,7 @@ public class LogicScript : MonoBehaviour
             maxAmount--;
             count++;
         }
-        Invoke(nameof(SetActive), count * animSpeed/2);
+        Invoke(nameof(SetActiveTrue), count * animSpeed/2);
     }
 
     public void CheckEndGame() 
@@ -84,11 +99,16 @@ public class LogicScript : MonoBehaviour
         {
             if (!item.GetComponent<ContainerScript>().VerifyContainer(colorCount))
             {
-                gameOverScreen.SetActive(false);
+                nextLevelScreen.SetActive(false);
                 return;
             }
         }
-        gameOverScreen.SetActive(true);
+        nextLevelScreen.SetActive(true);
+    }
+
+    public void NextLevel()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
     }
 
     public void RestartGame()
@@ -101,13 +121,23 @@ public class LogicScript : MonoBehaviour
         Application.Quit();
     }
 
-    void SetActive()
+    public void SetActiveTrue()
     {
         active = true;
+    }
+
+    public void SetActiveFalse()
+    {
+        active = false;
     }
 
     public bool GetActive()
     {
         return active;
+    }
+
+    public List<GameObject> GetContainers()
+    {
+        return containers;
     }
 }

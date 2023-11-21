@@ -1,7 +1,7 @@
-using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public struct Ball
 {
@@ -19,19 +19,29 @@ public class ContainerScript : MonoBehaviour
     public bool isComplete = false;
 
     private LogicScript gameLogic;
+    private MovesScript moves;
     private readonly int max = 4;
+    private int flipped = 1;
 
     void Start()
     {
         gameLogic = GameObject.Find("Logic").GetComponent<LogicScript>();
+        moves = GameObject.Find("Logic").GetComponent<MovesScript>();
     }
 
     void OnMouseDown() 
     {
-        if (!gameLogic.selected.IsActive && amount > 0)
-            PopBall();
-        else if (gameLogic.selected.IsActive && amount < max)
-            PushBall();
+        if (Random.value > gameLogic.moveChance && SceneManager.GetActiveScene().buildIndex > 2)
+        {
+            moves.ChooseMove(this.GameObject());
+        }
+        else
+        {
+            if (!gameLogic.selected.IsActive && amount > 0)
+                PopBall();
+            else if (gameLogic.selected.IsActive && amount < max)
+                PushBall();
+        }
     }
 
     public void AddColor(Color color, int index, int count) 
@@ -73,15 +83,18 @@ public class ContainerScript : MonoBehaviour
 
     void PushBall() 
     {
+        if (!gameLogic.GetActive())
+            return;
+
         Debug.Log(origin.transform.position.y);
         Ball newBall = gameLogic.selected;
         gameLogic.selected.Obj.GetComponent<SpriteRenderer>().sortingOrder = 0;
         gameLogic.selected = new() { IsActive = false };
         newBall.Obj.transform.parent = transform;
         if (balls.Count != 0) 
-            newBall.Obj.transform.position = balls.Peek().Obj.transform.position + Vector3.up * newBall.Obj.transform.lossyScale.y;
+            newBall.Obj.transform.position = balls.Peek().Obj.transform.position + flipped * newBall.Obj.transform.lossyScale.y * Vector3.up;
         else
-            newBall.Obj.transform.position = origin.transform.position + Vector3.up * newBall.Obj.transform.lossyScale.y/2;
+            newBall.Obj.transform.position = origin.transform.position + flipped * newBall.Obj.transform.lossyScale.y/2 * Vector3.up;
         balls.Push(newBall);
         amount++;
         gameLogic.CheckEndGame();
@@ -111,4 +124,9 @@ public class ContainerScript : MonoBehaviour
         else
             return true;
     } 
+
+    public void SetFlipped()
+    {
+        flipped *= -1;
+    }
 }
